@@ -1,75 +1,69 @@
-# React + TypeScript + Vite
+# WindScope frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Single-page React + TypeScript dashboard, styled with Tailwind CSS and custom CSS.
+Axios handles API requests, Recharts renders charts, and Lucide supplies icons.
+AI tools (OpenAI Codex) assisted with implementation.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Start the Python backend on port 8000, then from this frontend directory:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```sh
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Open the Vite URL printed in the terminal (normally http://localhost:5173).
+The Vite development server proxies `/api` to `http://127.0.0.1:8000`.
+No backend CORS change is needed for this local setup.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Selecting a decision date automatically requests `GET /api/wind?date=YYYY-MM-DD`.
+The initial date is 1 January 2026 to demonstrate the assessment dataset.
+All valid dates are selectable, including today and future dates. The Today button
+uses your browser's local calendar date. The delivery day is the following UTC day,
+matching the backend contract. Far-future dates normally have no published data.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Structure
 
+- `src/api/client.ts`: shared Axios instance, timeout, and readable error messages.
+- `src/api/wind.ts`: typed wind endpoint request.
+- `src/types/wind.ts`: backend records, chart points, and analysis types.
+- `src/hooks/useWindData.ts`: loading, failures, refresh, cancellation, and stale-result protection.
+- `src/utils/analyzeWind.ts`: revision selection, alignment, and accuracy calculations.
+- `src/utils/format.ts`: date and number formatting.
+- `src/components/dashboard/`: date picker, metrics, chart section, and period table.
+- `src/components/charts/`: separate line/bar components and shared chart styling.
+- `src/App.tsx`: page composition.
+
+## Comparison method
+
+For each target generation time, use the latest forecast published on the selected
+decision date, using UTC boundaries. This is an end-of-day view, not a claim about
+what was available at a particular market purchase cutoff.
+
+When all forecast target timestamps fall on full hours, show hourly comparison:
+actual power is the average of the readings at HH:00 and HH:30. Both must be
+present; incomplete hours stay missing. Otherwise, compare exact timestamps.
+Actual revisions are deduplicated using their latest publication time.
+No interpolation or zero filling is applied.
+
+Average forecast and actual cards use their respective available periods; they
+can cover different sets of periods if data is missing. Error metrics use paired
+periods only. Error = forecast minus actual, MAE = mean absolute error, bias =
+mean signed error, and RMSE = root mean squared error. Missing actuals produce
+unavailable errors, not zero errors. Future delivery days have no actuals yet.
+
+## Checks
+
+```sh
+npm run build
+npm run lint
+npm test
 ```
+
+## Deployment configuration
+
+`VITE_API_BASE_URL` can point to a deployed backend, including its `/api` suffix.
+See `.env.example`. For separate frontend/backend origins, configure the backend's
+CORS allowlist for that frontend origin. Alternatively, provide a same-origin
+`/api` reverse proxy. Vite's development proxy is not bundled into production.
