@@ -6,7 +6,7 @@ AI tools (OpenAI Codex) assisted with implementation.
 
 ## Run locally
 
-Start the Python backend on port 8000, then from this frontend directory:
+Start the Docker stack from the repository root, then run Vite from this frontend directory:
 
 ```sh
 npm install
@@ -14,8 +14,21 @@ npm run dev
 ```
 
 Open the Vite URL printed in the terminal (normally http://localhost:5173).
-The Vite development server proxies `/api` to `http://127.0.0.1:8000`.
+The Vite development server proxies `/api` to Docker's Nginx at
+`http://127.0.0.1:80`, which forwards the request to the backend container.
+This lets http://localhost:5173 use the same running stack as http://localhost.
 No backend CORS change is needed for this local setup.
+
+To run the Python backend directly on port 8000 instead, start it using the
+backend README instructions and run Vite with:
+
+```sh
+API_PROXY_TARGET=http://127.0.0.1:8000 npm run dev
+```
+
+Alternatively, save `API_PROXY_TARGET=http://127.0.0.1:8000` in `.env.local`.
+Restart Vite after changing environment settings. Keep `VITE_API_BASE_URL` unset
+for this local setup so Axios uses `/api`.
 
 Selecting a decision date automatically requests `GET /api/wind?date=YYYY-MM-DD`.
 The initial date is 1 January 2026 to demonstrate the assessment dataset.

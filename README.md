@@ -99,7 +99,9 @@ flowchart TD
     E --> T[Period breakdown table]
 ```
 
-In native development, Vite provides the `/api` proxy in place of Nginx. In Docker,
+During frontend development, Vite proxies `/api` to the Docker Nginx on port 80
+by default; set `API_PROXY_TARGET=http://127.0.0.1:8000` to use a native Python
+backend instead. In Docker,
 Nginx serves the already-built React files and proxies API requests. The browser
 never calls the Elexon endpoints directly.
 
