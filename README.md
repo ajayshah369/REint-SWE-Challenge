@@ -308,9 +308,9 @@ From this repository's root:
 docker compose up --build -d --wait
 ```
 
-- Dashboard: http://localhost:8080
-- API documentation: http://localhost:8080/docs
-- Example API: http://localhost:8080/api/wind?date=2026-01-01
+- Dashboard: http://localhost
+- API documentation: http://localhost/docs
+- Example API: http://localhost/api/wind?date=2026-01-01
 
 Select a decision date to load forecasts for the following delivery day and its
 actual generation. Today and future dates are supported; unpublished data stays
@@ -332,11 +332,28 @@ docker compose logs -f
 docker compose down
 ```
 
-If port 8080 is occupied, choose another host port:
+The frontend publishes host port 80. Stop any existing service using that port
+before starting this stack, or adjust the frontend port mapping in `compose.yaml`.
 
-```sh
-FRONTEND_PORT=8081 docker compose up --build -d --wait
-```
+### Deploy on AWS EC2
+
+1. Install Docker Engine and the Docker Compose plugin on the instance.
+2. Clone this repository and enter its root directory.
+3. Ensure the instance has a public IPv4 address and internet routing. Allow
+   inbound TCP port 80 in its security group for public HTTP access. Keep SSH
+   access restricted to your own IP; the backend does not require a public port.
+4. Run `docker compose up --build -d --wait`.
+5. Open `http://YOUR_EC2_PUBLIC_IP` and check `/docs` for the API documentation.
+
+The mapping `80:80` binds the frontend to the host's network interfaces, making it
+reachable through the EC2 public IP when networking permits. Only Nginx is
+published; `/api` requests are forwarded to the backend over the Docker network.
+The instance needs outbound HTTPS access to download images/dependencies and
+retrieve Elexon data. HTTPS requires additional TLS certificate/proxy configuration;
+this setup currently serves HTTP.
+
+The assessment specifies Vercel or Heroku hosting. An EC2-only deployment is a
+deviation from that requirement and should be agreed with the evaluator.
 
 ### Container layout
 
@@ -350,14 +367,15 @@ FRONTEND_PORT=8081 docker compose up --build -d --wait
 - Each `.dockerignore` excludes virtual environments, dependencies, build output,
   and local environment files from its build context.
 
-Only the frontend port is published, bound to the local machine. The backend is
+Only frontend port 80 is published on the host network interfaces. The backend is
 reachable through Nginx and from other Compose services. Frontend Axios requests
 use `/api`, so browser requests share the frontend origin without CORS setup.
 Existing local development servers on ports 5173 and 8000 can keep running.
 
 Container health checks verify Nginx and FastAPI readiness without calling Elexon.
 External data errors are reported by the API/dashboard. This Compose configuration
-is for local execution; Vercel/Heroku deployment requires platform-specific setup.
+supports local execution and an EC2 HTTP deployment; Vercel/Heroku deployment
+requires platform-specific setup.
 
 ## Source structure
 
